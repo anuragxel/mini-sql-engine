@@ -119,14 +119,22 @@ void complete_field(std::string& field, parsed_query& p) {
         int once = 0;
         for(auto& table_name : p.tables) {
                 auto table = get_table(table_name);
-                if(table.field_check(field)) {
+                if(table.is_field_present(field)) {
                         once += 1;
-                        if(field.find_last_of(".") != std::string::npos) continue;
-                        field = table_name + "." + field;
                 }
+        }
+        if(once > 1) {
+            throw "QueryError: Field " + field + " is ambiguous.";
         }
         if(once == 0) {
                 throw "QueryError: Field " + field + " does not exist.";
+        }
+        for(auto& table_name : p.tables) {
+                auto table = get_table(table_name);
+                if(table.field_check(field)) {
+                        if(field.find_last_of(".") != std::string::npos) continue;
+                        field = table_name + "." + field;
+                }
         }
 }
 
