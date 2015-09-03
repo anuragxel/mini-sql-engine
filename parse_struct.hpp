@@ -78,9 +78,9 @@ namespace db {
             case db::logic_type::NONE: ss << "NONE" << std::endl; break;
         }
         if(p.is_join) {
-            ss << "join: true";
+            ss << "join: true" << std::endl;
         }
-        ss << "===========================================";
+        ss << "===========================================" << std::endl;
         return ss.str();
     }
 }

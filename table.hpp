@@ -74,6 +74,10 @@ namespace db {
             return rows_.size();
         }
 
+        std::string name() const {
+            return name_;
+        }
+
         std::size_t number_of_fields() const {
             return fields_.size();
         }
@@ -122,13 +126,14 @@ namespace db {
 
             if(index != std::string::npos) {
                 if(str.substr(0,index) != name_) {
-                    throw "NameError: The Field Doesn't Exist in " + name_;
+
+                    throw "NameError: The Field " + str + "  doesn't Exist in " + name_;
                 }
                 str = str.substr(index+1);
             }
             auto it = std::find(fields_.begin(), fields_.end(), str);
             if(it == fields_.end()) {
-                throw "NameError: The Field Doesn't Exist in " + name_;
+                throw "NameError: The Field " + str + "  doesn't Exist in " + name_;
             }
             return it - fields_.begin();
         }
