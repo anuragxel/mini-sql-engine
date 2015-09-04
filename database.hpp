@@ -15,20 +15,6 @@
 #include <sys/stat.h>
 
 namespace db {
-class binary_predicate {
-private:
-int index_;
-int which_comp_;
-public:
-binary_predicate(int p, int w) : index_(p), which_comp_(w) {
-}
-bool operator()(const db::row& a, const db::row& b) {
-        if(which_comp_ == 0) return a[index_] < b[index_];
-        if(which_comp_ == 1) return a[index_] == b[index_];
-        return a[index_] > b[index_];
-}
-};
-
 class database {
 private:
 std::ifstream metadata_file_;
@@ -455,8 +441,12 @@ void execute(parsed_query& query) {
         }
         if(!query.dis_column.empty()) {
                 int index = get_index_of_field(query.fields, query.dis_column);
-                std::sort(rows.begin(), rows.end(), binary_predicate(index, 0));
-                auto last = std::unique(rows.begin(), rows.end(), binary_predicate(index, 1));
+                std::sort(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
+                  return a[index] < b[index];
+                });
+                auto last = std::unique(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
+                  return a[index] == b[index];
+                });
                 rows.erase(last, rows.end());
         }
         if(query.agg_type != db::aggregate_type::NONE) {
@@ -465,15 +455,21 @@ void execute(parsed_query& query) {
                 std::vector<int> n_tuple;
                 switch(query.agg_type) {
                 case db::aggregate_type::MIN:
-                        std::sort(rows.begin(), rows.end(), binary_predicate(index, 0));
+                        std::sort(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
+                          return a[index] < b[index];
+                        });
                         rows.erase(rows.begin() + 1, rows.end());
                         break;
                 case db::aggregate_type::MAX:
-                        std::sort(rows.begin(), rows.end(), binary_predicate(index, 2));
+                        std::sort(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
+                          return a[index] > b[index];
+                        });
                         rows.erase(rows.begin() + 1, rows.end());
                         break;
                 case db::aggregate_type::SUM:
-                        std::sort(rows.begin(), rows.end(), binary_predicate(index, 0));
+                        std::sort(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
+                          return a[index] < b[index];
+                        });
                         for(auto& r : rows) {
                                 summation += r[index];
                         }
@@ -485,7 +481,9 @@ void execute(parsed_query& query) {
                         rows.push_back(n_tuple);
                         break;
                 case db::aggregate_type::AVG:
-                        std::sort(rows.begin(), rows.end(), binary_predicate(index, 0));
+                        std::sort(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
+                          return a[index] < b[index];
+                        });
                         for(auto& r : rows) {
                                 summation += r[index];
                         }

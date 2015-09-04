@@ -10,13 +10,13 @@
 #include "database.hpp"
 
 int main(int argc, char** argv) {
-    if(argc < 2 || argc > 2) {
-        std::cout << "USAGE: db \"sql_query\"" << std::endl;
-        return -1;
-    }
-    std::string sql_query(argv[1]);
-    db::database anurag_db;
-    anurag_db.query(sql_query);
+        if(argc < 2 || argc > 2) {
+                std::cout << "USAGE: db \"sql_query\"" << std::endl;
+                return -1;
+        }
+        std::string sql_query(argv[1]);
+        db::database anurag_db;
+        anurag_db.query(sql_query);
 }
 
 #endif

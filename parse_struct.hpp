@@ -10,7 +10,6 @@
 #include "enums.hpp"
 
 namespace db {
-
     struct parsed_query {
         std::string query_type; // type of query, has to be "select".
 
