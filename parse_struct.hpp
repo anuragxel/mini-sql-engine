@@ -10,7 +10,7 @@
 #include "enums.hpp"
 
 namespace db {
-    struct parsed_query {
+struct parsed_query {
         std::string query_type; // type of query, has to be "select".
 
         std::vector<std::string> fields; // the selected fields
@@ -28,24 +28,24 @@ namespace db {
         bool is_join; // is a join query
         std::vector<std::tuple<std::string, std::string, std::string>> string_conditionals; // column_name, comparison_type, value to compare to.
 
-    };
+};
 
-    template <typename T> std::string to_str(std::vector<T> strings, bool arr) {
+template <typename T> std::string to_str(std::vector<T> strings, bool arr) {
         std::stringstream ss;
         if(arr)
-          ss << "[ ";
+                ss << "[ ";
         for(int i = 0; i < strings.size(); ++i) {
-            if(i != 0) {
-                ss << ",";
-            }
-            ss << strings[i];
+                if(i != 0) {
+                        ss << ",";
+                }
+                ss << strings[i];
         }
         if(arr)
-          ss << " ]";
+                ss << " ]";
         return ss.str();
-    }
+}
 
-    std::string parse_output(struct parsed_query& p) {
+std::string parse_output(struct parsed_query& p) {
         std::stringstream ss;
         ss << "===========================================" << std::endl;
         ss << "PARSE OUTPUT" << std::endl;
@@ -54,34 +54,34 @@ namespace db {
         ss << "tables: " << to_str(p.tables,true) << std::endl;
         ss << "agg_type: ";
         switch(p.agg_type) {
-            case db::aggregate_type::AVG:   ss << "AVG on " << p.agg_column; break;
-            case db::aggregate_type::MIN:   ss << "MIN on " << p.agg_column; break;
-            case db::aggregate_type::MAX:   ss << "MAX on " << p.agg_column; break;
-            case db::aggregate_type::SUM:   ss << "SUM on " << p.agg_column; break;
-            case db::aggregate_type::NONE:  ss << "NONE"; break;
+        case db::aggregate_type::AVG:   ss << "AVG on " << p.agg_column; break;
+        case db::aggregate_type::MIN:   ss << "MIN on " << p.agg_column; break;
+        case db::aggregate_type::MAX:   ss << "MAX on " << p.agg_column; break;
+        case db::aggregate_type::SUM:   ss << "SUM on " << p.agg_column; break;
+        case db::aggregate_type::NONE:  ss << "NONE"; break;
         }
         ss << std::endl;
         if(!p.dis_column.empty()) {
-            ss << "distinct_column: " << p.dis_column << std::endl;
+                ss << "distinct_column: " << p.dis_column << std::endl;
         }
         for(auto& cond : p.string_conditionals) {
-            ss << "string_condition: [ "<< std::get<0>(cond) << ", " << std::get<1>(cond) << ", " << std::get<2>(cond) << " ]"<< std::endl;
+                ss << "string_condition: [ "<< std::get<0>(cond) << ", " << std::get<1>(cond) << ", " << std::get<2>(cond) << " ]"<< std::endl;
         }
         for(auto& cond : p.conditionals) {
-            ss << "condition: [ "<< std::get<0>(cond) << ", " << std::get<1>(cond) << ", " << std::get<2>(cond) << " ]"<< std::endl;
+                ss << "condition: [ "<< std::get<0>(cond) << ", " << std::get<1>(cond) << ", " << std::get<2>(cond) << " ]"<< std::endl;
         }
         ss << "logic_op: ";
         switch(p.logic_op) {
-            case db::logic_type::AND:   ss << "AND" << std::endl ; break;
-            case db::logic_type::OR:   ss <<  "OR" << std::endl; break;
-            case db::logic_type::NONE: ss << "NONE" << std::endl; break;
+        case db::logic_type::AND:   ss << "AND" << std::endl; break;
+        case db::logic_type::OR:   ss <<  "OR" << std::endl; break;
+        case db::logic_type::NONE: ss << "NONE" << std::endl; break;
         }
         if(p.is_join) {
-            ss << "join: true" << std::endl;
+                ss << "join: true" << std::endl;
         }
         ss << "===========================================" << std::endl;
         return ss.str();
-    }
+}
 }
 
 #endif

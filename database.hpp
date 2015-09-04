@@ -324,7 +324,6 @@ bool satisfies(const db::table& tb, const db::row& rb,
         if(number > 1) {
                 if(logic_op == db::logic_type::AND) return truth_values[0] and truth_values[1];
                 else if(logic_op == db::logic_type::OR) return truth_values[0] or truth_values[1];
-                else throw "RuntimeError: Logical Operator is Invalid!";
         }
         return rv;
 }
@@ -368,8 +367,8 @@ void execute_join(parsed_query& query) {
                                 for(auto& condition : query.conditionals) {
                                         auto tmp_table_name = std::get<0>(condition);
                                         tmp_table_name = tmp_table_name.substr(0, tmp_table_name.find("."));
-                                        std::vector<std::tuple<std::string,std::string, int>> tmp_cond;
-                                        std::vector<std::tuple<std::string,std::string, std::string>> empty_cond;
+                                        std::vector<std::tuple<std::string,std::string,int>> tmp_cond;
+                                        std::vector<std::tuple<std::string,std::string,std::string>> empty_cond;
                                         tmp_cond.push_back(condition);
                                         if(tmp_table_name == tb1.name()) {
                                                 rv = satisfies(tb1,rb1,tmp_cond,empty_cond,query.logic_op);
@@ -378,9 +377,6 @@ void execute_join(parsed_query& query) {
                                         else if(tmp_table_name == tb2.name()) {
                                                 rv = satisfies(tb1,rb1,tmp_cond,empty_cond,query.logic_op);
                                                 truth_values.push_back(rv);
-                                        }
-                                        else {
-                                            throw "WTF!";
                                         }
                                         tmp_cond.clear();
                                 }
@@ -416,12 +412,10 @@ void execute_join(parsed_query& query) {
 void execute(parsed_query& query) {
         std::vector<int> indices;
         db::table tb = get_table(query.tables[0]);
-        for(auto& table_name : query.tables) {
-                for(auto& field : query.fields) {
-                        if(tb.is_field_present(field)) {
-                                indices.push_back(tb.get_index_of_field(field));
-                        }
-                }
+        for(auto& field : query.fields) {
+              if(tb.is_field_present(field)) {
+                    indices.push_back(tb.get_index_of_field(field));
+              }
         }
         std::vector<db::row> rows;
         std::vector<int> tuple;
@@ -441,60 +435,49 @@ void execute(parsed_query& query) {
         }
         if(!query.dis_column.empty()) {
                 int index = get_index_of_field(query.fields, query.dis_column);
-                std::sort(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
+                auto lt = [index](const db::row& a, const db::row& b){
                   return a[index] < b[index];
-                });
-                auto last = std::unique(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
+                };
+                auto eq = [index](const db::row& a, const db::row& b){
                   return a[index] == b[index];
-                });
+                };
+                std::sort(rows.begin(), rows.end(), lt);
+                auto last = std::unique(rows.begin(), rows.end(), eq);
                 rows.erase(last, rows.end());
         }
         if(query.agg_type != db::aggregate_type::NONE) {
                 int index = get_index_of_field(query.fields, query.agg_column);
                 int summation = 0;
+                auto lt = [index](const db::row& a, const db::row& b){
+                  return a[index] < b[index];
+                };
+                auto gt = [index](const db::row& a, const db::row& b){
+                  return a[index] > b[index];
+                };
                 std::vector<int> n_tuple;
-                switch(query.agg_type) {
-                case db::aggregate_type::MIN:
-                        std::sort(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
-                          return a[index] < b[index];
-                        });
-                        rows.erase(rows.begin() + 1, rows.end());
-                        break;
-                case db::aggregate_type::MAX:
-                        std::sort(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
-                          return a[index] > b[index];
-                        });
-                        rows.erase(rows.begin() + 1, rows.end());
-                        break;
-                case db::aggregate_type::SUM:
-                        std::sort(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
-                          return a[index] < b[index];
-                        });
+
+                if(query.agg_type == db::aggregate_type::MIN) {
+                    std::sort(rows.begin(), rows.end(), lt);
+                    rows.erase(rows.begin() + 1, rows.end());
+                }
+                else if(query.agg_type == db::aggregate_type::MAX) {
+                    std::sort(rows.begin(), rows.end(), gt);
+                    rows.erase(rows.begin() + 1, rows.end());
+                }
+                if(query.agg_type == db::aggregate_type::SUM or query.agg_type == db::aggregate_type::AVG) {
+                        std::sort(rows.begin(), rows.end(), lt);
                         for(auto& r : rows) {
                                 summation += r[index];
                         }
                         for(int i = 0; i < rows[0].size(); i++) {
                                 n_tuple.push_back(rows[0][i]);
                         }
+                        if(query.agg_type == db::aggregate_type::AVG) {
+                          summation = (int)((double)summation/(double)rows.size());
+                        }
                         n_tuple[index] = summation;
                         rows.clear();
                         rows.push_back(n_tuple);
-                        break;
-                case db::aggregate_type::AVG:
-                        std::sort(rows.begin(), rows.end(), [index](const db::row& a, const db::row& b){
-                          return a[index] < b[index];
-                        });
-                        for(auto& r : rows) {
-                                summation += r[index];
-                        }
-                        for(int i = 0; i < rows[0].size(); i++) {
-                                n_tuple.push_back(rows[0][i]);
-                        }
-                        summation = (int)((double)summation/(double)rows.size());
-                        n_tuple[index] = summation;
-                        rows.clear();
-                        rows.push_back(n_tuple);
-                        break;
                 }
         }
         std::cout << to_str(query.fields, false) << std::endl;
